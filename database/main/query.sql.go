@@ -96,6 +96,7 @@ and
 order by
     passwords.create_date
 desc
+limit 1
 `
 
 type GetUserLatestPasswordRow struct {

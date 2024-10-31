@@ -47,4 +47,5 @@ and
     passwords.update_date is null
 order by
     passwords.create_date
-desc;
+desc
+limit 1;
