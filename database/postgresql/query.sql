@@ -1,16 +1,3 @@
--- name: GetUser :one
-select 
-    id, 
-    username, 
-    name, 
-    email, 
-    dob, 
-    gender
-from 
-    users
-where 
-    username = $1;
-
 -- name: CreateUserReturnId :one
 insert into users (
     username,
@@ -42,3 +29,22 @@ values (
     now()
 )
 returning user_id;
+
+-- name: GetUserLatestPassword :one
+select 
+    users.id,
+    users.username,
+    passwords.password
+from 
+    users
+join 
+    passwords
+on 
+    users.id = passwords.user_id
+where 
+    users.username = $1
+and 
+    passwords.update_date is null
+order by
+    passwords.create_date
+desc;

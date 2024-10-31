@@ -30,10 +30,7 @@ func (r *RestService) Register(ctx *gin.Context, params *operation.RegisterReque
 		errorMessage := fmt.Sprintf("failed to insert new user with error: %v", err)
 		logrus.Warn(errorMessage)
 
-		response := util.GenerateProblemJson(http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
-
-		ctx.Header("Content-Type", "application/problem+json")
-		ctx.JSON(http.StatusInternalServerError, response)
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
 
 		return
 	}
@@ -43,10 +40,7 @@ func (r *RestService) Register(ctx *gin.Context, params *operation.RegisterReque
 		errorMessage := fmt.Sprintf("failed to hash password with error: %v", err)
 		logrus.Warn(errorMessage)
 
-		response := util.GenerateProblemJson(http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
-
-		ctx.Header("Content-Type", "application/problem+json")
-		ctx.JSON(http.StatusInternalServerError, response)
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
 
 		return
 	}
@@ -64,10 +58,33 @@ func (r *RestService) Register(ctx *gin.Context, params *operation.RegisterReque
 		errorMessage := fmt.Sprintf("failed to insert password to new user with error: %v", err)
 		logrus.Warn(errorMessage)
 
-		response := util.GenerateProblemJson(http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
 
-		ctx.Header("Content-Type", "application/problem+json")
-		ctx.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
+}
+
+func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
+	queries := database.New(r.db)
+
+	password, err := queries.GetUserLatestPassword(ctx, params.Username)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to fetch user password list with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(password.Password), []byte(params.Password))
+	if err != nil {
+		errorMessage := "password not match"
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusForbidden, errorMessage, ctx.FullPath(), uuid.NewString())
 
 		return
 	}

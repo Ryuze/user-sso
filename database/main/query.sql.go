@@ -78,39 +78,35 @@ func (q *Queries) CreateUserReturnId(ctx context.Context, arg CreateUserReturnId
 	return id, err
 }
 
-const getUser = `-- name: GetUser :one
+const getUserLatestPassword = `-- name: GetUserLatestPassword :one
 select 
-    id, 
-    username, 
-    name, 
-    email, 
-    dob, 
-    gender
+    users.id,
+    users.username,
+    passwords.password
 from 
     users
+join 
+    passwords
+on 
+    users.id = passwords.user_id
 where 
-    username = $1
+    users.username = $1
+and 
+    passwords.update_date is null
+order by
+    passwords.create_date
+desc
 `
 
-type GetUserRow struct {
+type GetUserLatestPasswordRow struct {
 	ID       int32
 	Username string
-	Name     string
-	Email    string
-	Dob      string
-	Gender   string
+	Password string
 }
 
-func (q *Queries) GetUser(ctx context.Context, username string) (GetUserRow, error) {
-	row := q.db.QueryRow(ctx, getUser, username)
-	var i GetUserRow
-	err := row.Scan(
-		&i.ID,
-		&i.Username,
-		&i.Name,
-		&i.Email,
-		&i.Dob,
-		&i.Gender,
-	)
+func (q *Queries) GetUserLatestPassword(ctx context.Context, username string) (GetUserLatestPasswordRow, error) {
+	row := q.db.QueryRow(ctx, getUserLatestPassword, username)
+	var i GetUserLatestPasswordRow
+	err := row.Scan(&i.ID, &i.Username, &i.Password)
 	return i, err
 }

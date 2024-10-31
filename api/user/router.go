@@ -7,4 +7,5 @@ import (
 
 func Router(r *gin.Engine, s Service) {
 	r.POST("/v1/register", operation.RegisterWrapper(s.Register))
+	r.POST("/v1/login", operation.LoginWrapper(s.Login))
 }

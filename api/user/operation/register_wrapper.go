@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/ideal-tekno-solusi/sso/util"
 )
 
@@ -29,27 +30,27 @@ type RegisterRequest struct {
 
 func RegisterWrapper(handler func(ctx *gin.Context, params *RegisterRequest)) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		//TODO: validate req disini, jika req tidak valid langsung ctx.JSON 400, jika aman maka teruskan ke func internal
 		params := RegisterRequest{}
 
 		err := ctx.BindJSON(&params)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, err)
+			util.SendProblemDetailJson(ctx, http.StatusInternalServerError, err.Error(), ctx.FullPath(), uuid.NewString())
+
 			return
 		}
 
-		err = validateReq(params)
+		err = validateRegisterReq(params)
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"message": err,
-			})
+			util.SendProblemDetailJson(ctx, http.StatusInternalServerError, err.Error(), ctx.FullPath(), uuid.NewString())
+
+			return
 		}
 
 		decryptPass, err := util.DecryptJwe(params.Password)
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"message": err,
-			})
+			util.SendProblemDetailJson(ctx, http.StatusInternalServerError, err.Error(), ctx.FullPath(), uuid.NewString())
+
+			return
 		}
 
 		params.Password = *decryptPass
@@ -60,7 +61,7 @@ func RegisterWrapper(handler func(ctx *gin.Context, params *RegisterRequest)) gi
 	}
 }
 
-func validateReq(params RegisterRequest) error {
+func validateRegisterReq(params RegisterRequest) error {
 	if params.Username == "" {
 		return errors.New("username can't be empty")
 	}

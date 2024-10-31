@@ -1,6 +1,10 @@
 package util
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Problem struct {
 	Type     string      `json:"type"`
@@ -19,4 +23,11 @@ func GenerateProblemJson(statusCode int, message, instance, guid string) Problem
 		Instance: instance,
 		Guid:     guid,
 	}
+}
+
+func SendProblemDetailJson(ctx *gin.Context, statusCode int, message, instance, guid string) {
+	problem := GenerateProblemJson(statusCode, message, instance, guid)
+
+	ctx.Header("Content-Type", "application/problem+json")
+	ctx.JSON(statusCode, problem)
 }
