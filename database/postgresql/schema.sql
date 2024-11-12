@@ -5,6 +5,7 @@ create table users (
 	email varchar(50) not null,
 	dob varchar(10) not null,
 	gender varchar(15) not null,
+	allowed_services varchar(255),
 	create_date timestamp not null,
 	delete_date timestamp
 );
@@ -15,3 +16,10 @@ create table passwords (
 	create_date timestamp not null,
 	update_date timestamp
 );
+
+create table services (
+	id serial primary key,
+	service_name varchar(50) unique not null,
+	public_key text not null,
+	status boolean not null
+)

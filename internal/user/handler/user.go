@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ideal-tekno-solusi/sso/api/user/operation"
 	database "github.com/ideal-tekno-solusi/sso/database/main"
+	"github.com/ideal-tekno-solusi/sso/internal/user/entity/response"
 	"github.com/ideal-tekno-solusi/sso/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sirupsen/logrus"
@@ -35,7 +36,7 @@ func (r *RestService) Register(ctx *gin.Context, params *operation.RegisterReque
 		return
 	}
 
-	hashPassword, err := bcrypt.GenerateFromPassword([]byte(params.Password), 32)
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(params.Password), 16)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to hash password with error: %v", err)
 		logrus.Warn(errorMessage)
@@ -69,6 +70,8 @@ func (r *RestService) Register(ctx *gin.Context, params *operation.RegisterReque
 func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 	queries := database.New(r.db)
 
+	res := response.LoginResponse{}
+
 	password, err := queries.GetUserLatestPassword(ctx, params.Username)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to fetch user password list with error: %v", err)
@@ -89,5 +92,38 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 		return
 	}
 
-	ctx.Status(http.StatusNoContent)
+	user, err := queries.GetUser(ctx, params.Username)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to get user information with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	token, time, err := util.BuildUserJwt(user)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to build token with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	sign, err := util.SignJwt(*token)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to sign token with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	res.Authorization = fmt.Sprintf("Bearer: %v", *sign)
+	res.Time = int(time.Seconds())
+
+	ctx.JSON(http.StatusOK, res)
 }

@@ -15,13 +15,21 @@ type Password struct {
 	UpdateDate pgtype.Timestamp
 }
 
+type Service struct {
+	ID          int32
+	ServiceName string
+	PublicKey   string
+	Status      bool
+}
+
 type User struct {
-	ID         int32
-	Username   string
-	Name       string
-	Email      string
-	Dob        string
-	Gender     string
-	CreateDate pgtype.Timestamp
-	DeleteDate pgtype.Timestamp
+	ID              int32
+	Username        string
+	Name            string
+	Email           string
+	Dob             string
+	Gender          string
+	AllowedServices pgtype.Text
+	CreateDate      pgtype.Timestamp
+	DeleteDate      pgtype.Timestamp
 }

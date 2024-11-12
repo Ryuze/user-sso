@@ -44,6 +44,7 @@ insert into users (
     email,
     dob,
     gender,
+    allowed_services,
     create_date
 )
 values (
@@ -52,17 +53,19 @@ values (
     $3,
     $4,
     $5,
+    $6,
     now()
 )
 returning id
 `
 
 type CreateUserReturnIdParams struct {
-	Username string
-	Name     string
-	Email    string
-	Dob      string
-	Gender   string
+	Username        string
+	Name            string
+	Email           string
+	Dob             string
+	Gender          string
+	AllowedServices pgtype.Text
 }
 
 func (q *Queries) CreateUserReturnId(ctx context.Context, arg CreateUserReturnIdParams) (int32, error) {
@@ -72,10 +75,42 @@ func (q *Queries) CreateUserReturnId(ctx context.Context, arg CreateUserReturnId
 		arg.Email,
 		arg.Dob,
 		arg.Gender,
+		arg.AllowedServices,
 	)
 	var id int32
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getUser = `-- name: GetUser :one
+select 
+    id,
+    username,
+    name,
+    allowed_services
+from 
+    users
+where 
+    username = $1
+`
+
+type GetUserRow struct {
+	ID              int32
+	Username        string
+	Name            string
+	AllowedServices pgtype.Text
+}
+
+func (q *Queries) GetUser(ctx context.Context, username string) (GetUserRow, error) {
+	row := q.db.QueryRow(ctx, getUser, username)
+	var i GetUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Name,
+		&i.AllowedServices,
+	)
+	return i, err
 }
 
 const getUserLatestPassword = `-- name: GetUserLatestPassword :one

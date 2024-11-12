@@ -5,6 +5,7 @@ insert into users (
     email,
     dob,
     gender,
+    allowed_services,
     create_date
 )
 values (
@@ -13,6 +14,7 @@ values (
     $3,
     $4,
     $5,
+    $6,
     now()
 )
 returning id;
@@ -49,3 +51,14 @@ order by
     passwords.create_date
 desc
 limit 1;
+
+-- name: GetUser :one
+select 
+    id,
+    username,
+    name,
+    allowed_services
+from 
+    users
+where 
+    username = $1;

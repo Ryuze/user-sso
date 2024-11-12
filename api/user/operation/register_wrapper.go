@@ -39,14 +39,16 @@ func RegisterWrapper(handler func(ctx *gin.Context, params *RegisterRequest)) gi
 			return
 		}
 
-		err = validateRegisterReq(params)
+		decryptPass, err := util.DecryptJwe(params.Password)
 		if err != nil {
 			util.SendProblemDetailJson(ctx, http.StatusInternalServerError, err.Error(), ctx.FullPath(), uuid.NewString())
 
 			return
 		}
 
-		decryptPass, err := util.DecryptJwe(params.Password)
+		params.Password = *decryptPass
+
+		err = validateRegisterReq(params)
 		if err != nil {
 			util.SendProblemDetailJson(ctx, http.StatusInternalServerError, err.Error(), ctx.FullPath(), uuid.NewString())
 
@@ -72,6 +74,10 @@ func validateRegisterReq(params RegisterRequest) error {
 
 	if params.Password == "" {
 		return errors.New("password can't be empty")
+	}
+
+	if len(params.Password) > 72 {
+		return errors.New("password is to long")
 	}
 
 	if params.Name == "" {
