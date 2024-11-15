@@ -82,6 +82,30 @@ func (q *Queries) CreateUserReturnId(ctx context.Context, arg CreateUserReturnId
 	return id, err
 }
 
+const getService = `-- name: GetService :one
+select 
+    service_name,
+    public_key,
+    status
+from 
+    services
+where 
+    service_name = $1
+`
+
+type GetServiceRow struct {
+	ServiceName string
+	PublicKey   string
+	Status      bool
+}
+
+func (q *Queries) GetService(ctx context.Context, serviceName string) (GetServiceRow, error) {
+	row := q.db.QueryRow(ctx, getService, serviceName)
+	var i GetServiceRow
+	err := row.Scan(&i.ServiceName, &i.PublicKey, &i.Status)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 select 
     id,

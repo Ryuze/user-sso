@@ -115,3 +115,21 @@ func SignJwt(token jwt.Token) (*string, error) {
 
 	return &result, nil
 }
+
+func VerifyJwt(token, pubKey string) (jwt.Token, error) {
+	block, _ := pem.Decode([]byte(pubKey))
+
+	ecKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		logrus.Fatalf("failed to parse key with error: %v", err)
+		return nil, err
+	}
+
+	verifiedToken, err := jwt.Parse([]byte(token), jwt.WithKey(jwa.ES256(), ecKey))
+	if err != nil {
+		logrus.Fatalf("failed to parse token with error: %v", err)
+		return nil, err
+	}
+
+	return verifiedToken, nil
+}

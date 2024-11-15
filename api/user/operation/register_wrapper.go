@@ -50,7 +50,7 @@ func RegisterWrapper(handler func(ctx *gin.Context, params *RegisterRequest)) gi
 
 		err = validateRegisterReq(params)
 		if err != nil {
-			util.SendProblemDetailJson(ctx, http.StatusInternalServerError, err.Error(), ctx.FullPath(), uuid.NewString())
+			util.SendProblemDetailJson(ctx, http.StatusBadRequest, err.Error(), ctx.FullPath(), uuid.NewString())
 
 			return
 		}

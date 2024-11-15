@@ -122,7 +122,7 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 		return
 	}
 
-	res.Authorization = fmt.Sprintf("Bearer: %v", *sign)
+	res.Authorization = fmt.Sprintf("Bearer %v", *sign)
 	res.Time = int(time.Seconds())
 
 	ctx.JSON(http.StatusOK, res)

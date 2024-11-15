@@ -62,3 +62,13 @@ from
     users
 where 
     username = $1;
+
+-- name: GetService :one
+select 
+    service_name,
+    public_key,
+    status
+from 
+    services
+where 
+    service_name = $1;
