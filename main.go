@@ -43,7 +43,7 @@ func main() {
 	cfg.StopDb(ctx)
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logrus.Fatalf("shutdown server with error: %v", err)
+		logrus.Warnf("shutdown server with error: %v", err)
 	}
 
 	select {

@@ -112,7 +112,27 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 		return
 	}
 
+	refresh, _, err := util.BuildRefreshJwt(user.Username)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to build token with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
 	sign, err := util.SignJwt(*token)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to sign token with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	refreshSign, err := util.SignJwt(*refresh)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to sign token with error: %v", err)
 		logrus.Warn(errorMessage)
@@ -124,6 +144,8 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 
 	res.Authorization = fmt.Sprintf("Bearer %v", *sign)
 	res.Time = int(time.Seconds())
+
+	ctx.SetCookie("jwt", *refreshSign, 60*60*24, "/", "localhost", false, true)
 
 	ctx.JSON(http.StatusOK, res)
 }
