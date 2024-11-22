@@ -39,7 +39,8 @@ func RegisterWrapper(handler func(ctx *gin.Context, params *RegisterRequest)) gi
 			return
 		}
 
-		decryptPass, err := util.DecryptJwe(params.Password)
+		//? hardcode, register only from user service
+		decryptPass, err := util.DecryptJwe(params.Password, "user")
 		if err != nil {
 			util.SendProblemDetailJson(ctx, http.StatusInternalServerError, err.Error(), ctx.FullPath(), uuid.NewString())
 

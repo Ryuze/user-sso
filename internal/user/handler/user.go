@@ -3,6 +3,8 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -102,6 +104,16 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 		return
 	}
 
+	services := strings.Split(user.AllowedServices.String, ",")
+	if !slices.Contains(services, strings.ToLower(params.Service)) {
+		errorMessage := fmt.Sprintf("service %v is not authorized for current user", params.Service)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusForbidden, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
 	token, time, err := util.BuildUserJwt(user)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to build token with error: %v", err)
@@ -122,7 +134,7 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 		return
 	}
 
-	sign, err := util.SignJwt(*token)
+	sign, err := util.SignJwt(*token, strings.ToLower(params.Service))
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to sign token with error: %v", err)
 		logrus.Warn(errorMessage)
@@ -132,7 +144,7 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 		return
 	}
 
-	refreshSign, err := util.SignJwt(*refresh)
+	refreshSign, err := util.SignJwt(*refresh, strings.ToLower(params.Service))
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to sign token with error: %v", err)
 		logrus.Warn(errorMessage)
@@ -145,7 +157,7 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 	res.Authorization = fmt.Sprintf("Bearer %v", *sign)
 	res.Time = int(time.Seconds())
 
-	ctx.SetCookie("jwt", *refreshSign, 60*60*24, "/", "localhost", false, true)
+	ctx.SetCookie("jwt", *refreshSign, 60*60*24, "/", "172.25.186.66", false, true)
 
 	ctx.JSON(http.StatusOK, res)
 }

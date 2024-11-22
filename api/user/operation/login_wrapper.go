@@ -3,6 +3,7 @@ package operation
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -12,6 +13,7 @@ import (
 type LoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Service  string `json:"service"`
 }
 
 func LoginWrapper(handler func(ctx *gin.Context, params *LoginRequest)) gin.HandlerFunc {
@@ -32,7 +34,7 @@ func LoginWrapper(handler func(ctx *gin.Context, params *LoginRequest)) gin.Hand
 			return
 		}
 
-		decryptPass, err := util.DecryptJwe(params.Password)
+		decryptPass, err := util.DecryptJwe(params.Password, strings.ToLower(params.Service))
 		if err != nil {
 			util.SendProblemDetailJson(ctx, http.StatusInternalServerError, err.Error(), ctx.FullPath(), uuid.NewString())
 
@@ -58,6 +60,10 @@ func validateLoginReq(params LoginRequest) error {
 
 	if params.Password == "" {
 		return errors.New("password can't be empty")
+	}
+
+	if params.Service == "" {
+		return errors.New("service can't be empty")
 	}
 
 	return nil

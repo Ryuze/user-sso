@@ -65,3 +65,7 @@ func (r *RestService) Authorization(ctx *gin.Context, params *operation.Authoriz
 
 	ctx.JSON(http.StatusOK, res)
 }
+
+func (r *RestService) Refresh(ctx *gin.Context, params *operation.RefreshRequest) {
+	ctx.JSON(http.StatusOK, params)
+}

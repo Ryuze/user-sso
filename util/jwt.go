@@ -3,7 +3,7 @@ package util
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"os"
+	"fmt"
 	"time"
 
 	database "github.com/ideal-tekno-solusi/sso/database/main"
@@ -11,18 +11,15 @@ import (
 	"github.com/lestrrat-go/jwx/v3/jwe"
 	"github.com/lestrrat-go/jwx/v3/jwt"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
-func EncryptJwe(message string) (*string, error) {
+func EncryptJwe(message string, service string) (*string, error) {
 	var result string
 
-	data, err := os.ReadFile("/home/ryuze/projects/sso/secret/pubkey.pem")
-	if err != nil {
-		logrus.Warnf("failed to read pubkey with error: %v", err)
-		return nil, err
-	}
+	data := viper.GetString(fmt.Sprintf("secret.%v.pub", service))
 
-	block, _ := pem.Decode(data)
+	block, _ := pem.Decode([]byte(data))
 
 	ecKey, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
@@ -41,16 +38,12 @@ func EncryptJwe(message string) (*string, error) {
 	return &result, nil
 }
 
-func DecryptJwe(message string) (*string, error) {
+func DecryptJwe(message string, service string) (*string, error) {
 	var result string
 
-	data, err := os.ReadFile("/home/ryuze/projects/sso/secret/privkey.pem")
-	if err != nil {
-		logrus.Warnf("failed to read privkey with error: %v", err)
-		return nil, err
-	}
+	data := viper.GetString(fmt.Sprintf("secret.%v.priv", service))
 
-	block, _ := pem.Decode(data)
+	block, _ := pem.Decode([]byte(data))
 
 	ecKey, err := x509.ParseECPrivateKey(block.Bytes)
 	if err != nil {
@@ -104,16 +97,12 @@ func BuildRefreshJwt(username string) (*jwt.Token, *time.Duration, error) {
 	return &token, &expiryTime, nil
 }
 
-func SignJwt(token jwt.Token) (*string, error) {
+func SignJwt(token jwt.Token, service string) (*string, error) {
 	var result string
 
-	data, err := os.ReadFile("/home/ryuze/projects/sso/secret/privkey.pem")
-	if err != nil {
-		logrus.Warnf("failed to read privkey with error: %v", err)
-		return nil, err
-	}
+	data := viper.GetString(fmt.Sprintf("secret.%v.priv", service))
 
-	block, _ := pem.Decode(data)
+	block, _ := pem.Decode([]byte(data))
 
 	ecKey, err := x509.ParseECPrivateKey(block.Bytes)
 	if err != nil {
