@@ -14,6 +14,7 @@ import (
 	"github.com/ideal-tekno-solusi/sso/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -70,6 +71,8 @@ func (r *RestService) Register(ctx *gin.Context, params *operation.RegisterReque
 }
 
 func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
+	domain := viper.GetString("config.domain")
+
 	queries := database.New(r.db)
 
 	res := response.LoginResponse{}
@@ -157,7 +160,7 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 	res.Authorization = fmt.Sprintf("Bearer %v", *sign)
 	res.Time = int(time.Seconds())
 
-	ctx.SetCookie(fmt.Sprintf("jwt-%v", params.Service), *refreshSign, 60*60*24, "/", "172.25.186.66", false, true)
+	ctx.SetCookie(fmt.Sprintf("jwt-%v", params.Service), *refreshSign, 60*60*24, "/", domain, false, true)
 
 	ctx.JSON(http.StatusOK, res)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/ideal-tekno-solusi/sso/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func (r *RestService) Authorization(ctx *gin.Context, params *operation.AuthorizationRequest) {
@@ -67,6 +68,7 @@ func (r *RestService) Authorization(ctx *gin.Context, params *operation.Authoriz
 
 func (r *RestService) Refresh(ctx *gin.Context, params *operation.RefreshRequest) {
 	var username string
+	domain := viper.GetString("config.domain")
 
 	queries := database.New(r.db)
 
@@ -155,7 +157,7 @@ func (r *RestService) Refresh(ctx *gin.Context, params *operation.RefreshRequest
 	res.Authorization = fmt.Sprintf("Bearer %v", *sign)
 	res.Time = int(time.Seconds())
 
-	ctx.SetCookie(fmt.Sprintf("jwt-%v", params.Service), *refreshSign, 60*60*24, "/", "172.25.186.66", false, true)
+	ctx.SetCookie(fmt.Sprintf("jwt-%v", params.Service), *refreshSign, 60*60*24, "/", domain, false, true)
 
 	ctx.JSON(http.StatusOK, res)
 }
