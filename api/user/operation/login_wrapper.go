@@ -42,6 +42,7 @@ func LoginWrapper(handler func(ctx *gin.Context, params *LoginRequest)) gin.Hand
 		}
 
 		params.Password = *decryptPass
+		params.Service = strings.ToLower(params.Service)
 
 		handler(ctx, &params)
 

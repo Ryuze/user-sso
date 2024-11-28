@@ -34,7 +34,6 @@ func (r *RestService) Authorization(ctx *gin.Context, params *operation.Authoriz
 			return
 		}
 	}
-
 	if !service.Status {
 		ctx.JSON(http.StatusOK, res)
 	}
@@ -67,5 +66,96 @@ func (r *RestService) Authorization(ctx *gin.Context, params *operation.Authoriz
 }
 
 func (r *RestService) Refresh(ctx *gin.Context, params *operation.RefreshRequest) {
-	ctx.JSON(http.StatusOK, params)
+	var username string
+
+	queries := database.New(r.db)
+
+	res := response.LoginResponse{}
+
+	service, err := queries.GetService(ctx, params.Service)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to get service with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		switch err {
+		case pgx.ErrNoRows:
+			util.SendProblemDetailJson(ctx, http.StatusNotFound, errorMessage, ctx.FullPath(), uuid.NewString())
+			return
+		default:
+			util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+			return
+		}
+	}
+	if !service.Status {
+		ctx.JSON(http.StatusOK, res)
+	}
+
+	jwt, err := util.VerifyJwt(params.Jwt, service.PublicKey)
+	if err != nil {
+		errorMessage := "failed to validate token"
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	jwt.Get("username", &username)
+
+	user, err := queries.GetUser(ctx, username)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to get user information with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	token, time, err := util.BuildUserJwt(user)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to build token with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	refresh, _, err := util.BuildRefreshJwt(user.Username)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to build token with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	sign, err := util.SignJwt(*token, params.Service)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to sign token with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	refreshSign, err := util.SignJwt(*refresh, params.Service)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to sign token with error: %v", err)
+		logrus.Warn(errorMessage)
+
+		util.SendProblemDetailJson(ctx, http.StatusInternalServerError, errorMessage, ctx.FullPath(), uuid.NewString())
+
+		return
+	}
+
+	res.Authorization = fmt.Sprintf("Bearer %v", *sign)
+	res.Time = int(time.Seconds())
+
+	ctx.SetCookie(fmt.Sprintf("jwt-%v", params.Service), *refreshSign, 60*60*24, "/", "172.25.186.66", false, true)
+
+	ctx.JSON(http.StatusOK, res)
 }

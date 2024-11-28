@@ -105,7 +105,7 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 	}
 
 	services := strings.Split(user.AllowedServices.String, ",")
-	if !slices.Contains(services, strings.ToLower(params.Service)) {
+	if !slices.Contains(services, params.Service) {
 		errorMessage := fmt.Sprintf("service %v is not authorized for current user", params.Service)
 		logrus.Warn(errorMessage)
 
@@ -134,7 +134,7 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 		return
 	}
 
-	sign, err := util.SignJwt(*token, strings.ToLower(params.Service))
+	sign, err := util.SignJwt(*token, params.Service)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to sign token with error: %v", err)
 		logrus.Warn(errorMessage)
@@ -144,7 +144,7 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 		return
 	}
 
-	refreshSign, err := util.SignJwt(*refresh, strings.ToLower(params.Service))
+	refreshSign, err := util.SignJwt(*refresh, params.Service)
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to sign token with error: %v", err)
 		logrus.Warn(errorMessage)
@@ -157,7 +157,7 @@ func (r *RestService) Login(ctx *gin.Context, params *operation.LoginRequest) {
 	res.Authorization = fmt.Sprintf("Bearer %v", *sign)
 	res.Time = int(time.Seconds())
 
-	ctx.SetCookie("jwt", *refreshSign, 60*60*24, "/", "172.25.186.66", false, true)
+	ctx.SetCookie(fmt.Sprintf("jwt-%v", params.Service), *refreshSign, 60*60*24, "/", "172.25.186.66", false, true)
 
 	ctx.JSON(http.StatusOK, res)
 }
