@@ -7,9 +7,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/ideal-tekno-solusi/sso/api/user/operation"
+	"github.com/ideal-tekno-solusi/sso/api/auth/operation"
 	database "github.com/ideal-tekno-solusi/sso/database/main"
-	"github.com/ideal-tekno-solusi/sso/internal/user/entity/response"
+	"github.com/ideal-tekno-solusi/sso/internal/auth/entity/response"
+	user "github.com/ideal-tekno-solusi/sso/internal/user/entity/response"
 	"github.com/ideal-tekno-solusi/sso/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/sirupsen/logrus"
@@ -72,7 +73,7 @@ func (r *RestService) Refresh(ctx *gin.Context, params *operation.RefreshRequest
 
 	queries := database.New(r.db)
 
-	res := response.LoginResponse{}
+	res := user.LoginResponse{}
 
 	service, err := queries.GetService(ctx, params.Service)
 	if err != nil {
